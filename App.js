@@ -1,25 +1,59 @@
 import { StatusBar } from 'expo-status-bar';
-import { Component, useState, } from 'react';
-import { Button, StyleSheet, Text, View, TouchableOpacity } from 'react-native';
+import { Component, } from 'react';
+import { Pressable, StyleSheet, Text, View, TouchableOpacity, Dimensions } from 'react-native';
+import HistoryView from './History'
 
-
+const windowWidth = Dimensions.get('window').width;
+const  windowHeight = Dimensions.get('window').height;
 class App extends Component {
-
   constructor(){
     super()
     this.state = {
         resultText: '',
         out: '',
         signal: 0,
-        status: false
+        status1: false,
+        status2: false,
+        his_text:[],
+        id:0,
+        dimensions: {
+          screen
+        }
     }
+    this.clear = this.clear.bind(this)
     this.operations = ['AC','DEL','+','-','*','/','^','√']
     this.Math_op = [['sin', 'cos', 'tan'],['e', '𝝅', '$']]
   }
 
-  toggleStatus(){
+  onChange = ({ screen }) => {
+    this.setState({ dimensions: { screen } });
+  };
+
+  componentDidMount() {
+    this.dimensionsSubscription = Dimensions.addEventListener("change", this.onChange);
+  }
+
+  componentWillUnmount() {
+    this.dimensionsSubscription?.remove();
+  }
+
+  clear(){
+    let temp = []
     this.setState({
-      status:!this.state.status
+      his_text:temp,
+      id: 0
+    });
+  }
+
+  toggleStatus1(){
+    this.setState({
+      status1:!this.state.status1
+    });
+  }
+
+  toggleStatus2(){
+    this.setState({
+      status2:!this.state.status2
     });
   }
 
@@ -43,13 +77,21 @@ class App extends Component {
       
     } catch (e) {
       res = 'Syntax ERROR'
-      
-      
     }
     
     this.setState({
       out: res
     })
+    this.state.his_text.push(
+      {
+        id: this.state.id++,
+        cal_text: this.state.resultText,
+        res_text: '=' + res.toString(),
+        cal_flg: -1,
+        res_flg: -1
+      }
+    )
+    console.log(this.state.his_text)
     
   }
 
@@ -57,9 +99,11 @@ class App extends Component {
     console.log(text)
 
     if(text == '='){
+      
       this.setState({
-        signal: 1
-    })
+        signal: 1,
+      })
+
       return this.calculateResult()
     }
 
@@ -274,60 +318,108 @@ class App extends Component {
       
       m.push(<View style = {styles.row}>{row}</View>)
     }
-    
-    
+
     return(
-        <View style = {styles.container}>
-            <View style = {styles.result}>
-                <Text style = {styles.resultText}>{this.state.resultText}</Text>
-            </View>
+      //nếu chiều rộng gấp đôi chiều cao thì đổi
+        this.state.dimensions.screen.width/this.state.dimensions.screen.height >= 1.2?
+          <View style = {styles.containerLarge}>
+              <View style = {styles.calculatorPart}>
+                    <View style = {styles.result}>
+                        <Text style = {styles.resultText}>{this.state.resultText}</Text>
+                    </View>
 
-            <View style = {styles.calculation}>
-                <Text style = {styles.calculationText}>{this.state.out}</Text>
-            </View>
-            
-            
-  
-            {
-              this.state.status?
-                <View style = {styles.math}>
-                  <View style = {styles.numbers}>
-                      {m}
-                  </View>
-                </View>
-              :
-                <View style = {styles.buttons}>
-                  <View style = {styles.numbers}>
-                      {rows}
-                  </View>
-                  <View style = {styles.operations}>
-                      {ops}
-                  </View>
-                </View>
-            }
+                    <View style = {styles.calculation}>
+                        <Text style = {styles.calculationText}>{this.state.out}</Text>
+                    </View>
+                    {
+                      this.state.status1?
+                        <View style = {styles.math}>
+                          <View style = {styles.numbers}>
+                              {m}
+                          </View>
+                          
+                        </View>
+                      :
+                        <View style = {styles.buttons}>
+                          <View style = {styles.numbers}>
+                              {rows}
+                          </View>
+                          <View style = {styles.operations}>
+                              {ops}
+                          </View>
+                        </View>
+                    }
+                    <View style = {styles.nextPage}>
+                          <TouchableOpacity style = {styles.btn} onPress = {() => this.toggleStatus1()}>
+                            <Text style = {styles.nextText}>{'-->'}</Text>
+                          </TouchableOpacity>
+                    </View>
+              </View>
+              <View style = {styles.historyPart}>
+                <HistoryView data_his = {this.state.his_text}  allclear = {this.clear}/>
+              </View>
+          </View>
+        :
+          <View style = {styles.containerNormal} >
+                <Pressable style = {styles.history} onPress = {() => this.toggleStatus2()}>
+                  <Text>History</Text>
+                </Pressable>
+                
+              {
+                this.state.status2?
+                  <HistoryView data_his = {this.state.his_text}  allclear = {this.clear}/>
+                : 
+                  <>
+                    <View style = {styles.result}>
+                        <Text style = {styles.resultText}>{this.state.resultText}</Text>
+                    </View>
 
-            <View style = {styles.nextPage}>
-                  <TouchableOpacity style = {styles.btn} onPress = {() => this.toggleStatus()}>
-                    <Text style = {styles.nextText}>{'-->'}</Text>
-                  </TouchableOpacity>
-            </View>
-        </View>
+                    <View style = {styles.calculation}>
+                        <Text style = {styles.calculationText}>{this.state.out}</Text>
+                    </View>
+                    {
+                      this.state.status1?
+                        <View style = {styles.math}>
+                          <View style = {styles.numbers}>
+                              {m}
+                          </View>
+                          
+                        </View>
+                      :
+                        <View style = {styles.buttons}>
+                          <View style = {styles.numbers}>
+                              {rows}
+                          </View>
+                          <View style = {styles.operations}>
+                              {ops}
+                          </View>
+                        </View>
+                    }
+                    <View style = {styles.nextPage}>
+                          <TouchableOpacity style = {styles.btn} onPress = {() => this.toggleStatus1()}>
+                            <Text style = {styles.nextText}>{'-->'}</Text>
+                          </TouchableOpacity>
+                    </View>
+                  </>
+                
+              }
+          </View>
     )
   }
 }
 
 const styles = StyleSheet.create({
-    container: {
+    containerNormal: {
       flex: 1,
       
     },
     resultText:{
-      fontSize: 40,
+      fontSize: 50,
       color: 'black',
       
     },
     calculationText:{
-      fontSize: 34,
+      fontSize: 44,
       color: 'black'
     },
     row:{
@@ -389,7 +481,41 @@ const styles = StyleSheet.create({
     math: {
       flexGrow: 8,
       flexDirection: 'row'
+    },
+    history: {
+      backgroundColor: '#c9e9ff',
+      alignItems: 'center',
+      textAlign: 'center',
+      alignSelf: 'flex-end',
+      marginTop: 30,
+      marginBottom: 5,
+      borderWidth: 1,
+      borderColor: 'black',
+      borderRadius: 5,
+      paddingTop: 5,
+      paddingBottom: 5,
+      paddingLeft: 10,
+      paddingRight: 10,
+    },
+    
+    containerLarge: {
+      flex: 1,
+      flexDirection: 'row',
+      
+    },
+    calculatorPart: {
+      width: '60%',
+      backgroundColor: 'green',
+      borderWidth: 1,
+      borderColor:'black'
+    },
+    historyPart: {
+      width: '40%',
+      backgroundColor: 'red',
+      borderWidth: 2,
+      borderColor:'black'
     }
+    
 });
 
 
